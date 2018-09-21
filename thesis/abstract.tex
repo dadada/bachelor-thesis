@@ -1,0 +1,37 @@
+% abstract
+\thispagestyle{plain} % no header
+\centerline{\bfseries Abstract}
+\vspace*{1em}
+\noindent
+
+The \ac{RPL} has evolved into one of the most commonly used routing protocols
+for \acp{WSN}. It has already been evaluated under various criteria and for a
+wide range of applications. Previous work has established that single or
+multiple node restarts can transiently affect the rest of the network. The
+implications of this effect motivated a consecutive work that implemented a
+hardened version of \ac{RPL} based on the \emph{Contiki} operating system. The
+implementation has then been evaluated both using the \emph{Cooja} network
+simulator and a small test network. It has been concluded that the hardened
+implementation significantly reduced the control message overhead for \ac{WSN}
+in which single or multiple node resets occur.
+
+This thesis builds upon these findings by evaluating the effect of transient
+node failures using \fitlab, a large scale \ac{IoT} test network. For this
+purpose software has been created which automates the execution of the
+experiments and automatically collects and analyses the results.
+
+The general effect of transient node failures on \ac{RPL} has been confirmed
+using \fitlab. The hardened implementation manages to significantly reduce the
+control message overhead of a recovering network, but increases the overhead if
+no resets occur. Other criteria, such as the packet delivery ratio and the
+network convergence time, are adversely affected by it.
+
+\acresetall
+
+%\vspace*{5em}
+%
+%\centerline{\bfseries Zusammenfassung}
+%\vspace*{1em}
+%\noindent
+%Hier steht die deutsche Zusammenfassung, bei Arbeiten auf Deutsch steht die deutsche Zusammenfassung oben. If your thesis is in english, the german Zusammenfassung is optional.
+\cleardoublepage

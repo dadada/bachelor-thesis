@@ -1,0 +1,47 @@
+\ifgerman
+    \newcommand{\ibrsignature}{Datum, Unterschrift}
+\else
+    \newcommand{\ibrsignature}{Date, Signature}
+\fi
+
+\newcommand{\supervisors}[3]{
+	\newcounter{SupervisorsCounter}
+	\def\temp{#1}\ifx\temp\empty
+		\newcommand{\supervisorone}{}
+		\newcommand{\supervisoronesign}{}
+	\else
+		\newcommand{\supervisorone}{#1\\}
+		\newcommand{\supervisoronesign}{
+		#1           & \rule[-0.5ex]{\linewidth}{1pt}\newline\itshape(\ibrsignature)\\[5ex]
+		}
+		\stepcounter{SupervisorsCounter}
+	\fi
+
+	\def\temp{#2}\ifx\temp\empty
+		\newcommand{\supervisortwo}{}
+		\newcommand{\supervisortwosign}{}
+	\else
+		\newcommand{\supervisortwo}{#2\\}
+		\newcommand{\supervisortwosign}{
+		#2           & \rule[-0.5ex]{\linewidth}{1pt}\newline\itshape(\ibrsignature)\\[5ex]
+		}
+		\stepcounter{SupervisorsCounter}
+	\fi
+
+	\def\temp{#3}\ifx\temp\empty
+		\newcommand{\supervisorthree}{}
+		\newcommand{\supervisorthreesign}{}
+	\else
+		\newcommand{\supervisorthree}{#3\\}
+		\newcommand{\supervisorthreesign}{
+		#3           & \rule[-0.5ex]{\linewidth}{1pt}\newline\itshape(\ibrsignature)\\[5ex]
+		}
+		\stepcounter{SupervisorsCounter}
+	\fi
+
+	\ifnum\theSupervisorsCounter=1
+		\newcommand{\supervisorstring}{Supervisor:}
+	\else
+		\newcommand{\supervisorstring}{Supervisors:}
+	\fi
+}

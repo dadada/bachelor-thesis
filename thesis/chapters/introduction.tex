@@ -1,0 +1,92 @@
+\chapter{Introduction}
+
+In recent years, \acp{WSN} have been widely adopted as a means for applications
+such as industrial monitoring \cite{ding2010sensing} \cite{rfc5673}, wild-life
+tracking \cite{cassens2017automated} and public infrastructure \cite{rfc5867}.
+One significant trend is the rise of networked embedded devices that contain
+sensors and actors for performing dedicated tasks, which is often referred to as
+the \acf{IoT}.
+
+Many of these applications have in common that they need some means of
+transporting commands to these embedded devices and in turn receive sensor data
+from the devices. The way such a transport channel is achieved is often through
+creating a wireless mesh network, since deployment is comparatively convenient
+and cost efficient compared to wired networks. At the same time, such devices
+will often be battery powered, since at the deployment side a connection to the
+power grid might not be available with reasonable effort. In total, these
+restrictions lead to different constraints on the software that creates the mesh
+routing.
+
+When nodes are supplied by a battery, the maintenance interval of the node
+itself depends on how efficiently the node manages its limited amount of energy.
+In extreme cases (e.g. where the sink depletes its battery first) the total
+lifetime of the network may even depend on the minimum lifetime of any node in
+the network. For routing in \ac{WSN} the amount of energy it takes to establish
+a routing topology within the network of devices is largely due to the time the
+radio is powered for transmitting messages, which is proportional to the number
+and sizes of messages that need to be exchanged to create and maintain the
+routing topology. The amount of energy used also depends on the efficiency of
+the resulting routing topology when transmitting messages through the network.
+There is often a trade-off between the energy consumption of a network and the
+performance in terms of network latency and throughput. For this, different
+metrics can be applied and have to be carefully selected based on the conditions
+the network operates in.
+
+A problem that often occurs, especially in harsh environmental conditions (e.g.
+outdoor deployments, wildlife monitoring) or with faulty software, is from
+single or repeated node restarts. When a node resets, it has to reconfigure its
+routing information by exchanging message with surrounding nodes, which makes up
+a great part of the energy costs associated with \ac{WSN}. Such restarts do not
+only affect the specific resetting node, but also nodes that depend on the
+resetting node inside the routing topology. Previous work has shown that this
+behavior of transitively failing nodes can have a large impact on the energy
+efficiency of \acp{WSN} using \ac{RPL} \cite{kulau2017energy},
+\cite{mueller2017}.
+
+The \ac{RPL} is a protocol for routing messages in wireless mesh networks
+and has explicitly been designed for use with networks of nodes with low power
+consumption and lossy wireless links, as is typical for many deployment
+scenarios. It has become the de-facto standard routing protocol for wireless
+sensor networks and, as such, its behavior in conditions where transient node
+failures occur is of great interest to this work.
+
+One aspect of the effectiveness of a mesh routing protocol is how it deals with
+such transient node failures. It has to quickly detect these failures, decide
+how to invalidate the routes using the failed node and create and announce
+alternative routes in the network.
+
+In subsequent work \cite{mueller2017}, a hardened implementation of \ac{RPL} for
+the \emph{Contiki} operating system has been developed, that managed to reduce
+the influence of node restarts, by restoring a previous state that has been
+stored in the flash memory of the node. This hardened implementation has
+previously been evaluated both using simulations and within a limited test
+network.
+
+The \fitlab is a shared \ac{IoT} test network that features over 2000 nodes and
+provides an interface for the remote configuration and scheduling of
+experiments. Measurement data can be obtained for a variety of variables including
+\ac{RSSI}, \acp{PCAP}, serial interface output, and event logs for each node.
+The goal of this work is to further verify the findings concerning the effect of
+node restarts on the performance of \ac{RPL} and to evaluate the effectiveness
+of the hardened implementation for reducing the energy impact of transient node
+failures on a larger scale. In addition to the parameters needed for the
+verification of previous work \cite{mueller2017}, some further variables have
+been recorded (see \autoref{tab:params}) and evaluated that allow some
+conclusion about the performance \ac{RPL}.
+
+In \autoref{chap:relwork} an introduction to the mechanisms of \ac{RPL} is given
+and other work discussing the protocol performance of \ac{RPL} is presented
+including an analysis of the effect of transient node failures in \ac{WSN}. From
+the literature, different attempts for hardening \ac{RPL} against various forms
+of attacks on the protocol and other extensions that aim to add security and
+better performance are presented.
+
+The topology of test network and the hardware used for the sensor nodes is
+descibed in \autoref{chap:hardware}, while in \autoref{chap:setup} the different
+software components are further described including how the data for the
+individual variables is recorded, aggregated and analyzed.
+
+In \autoref{chap:evaluation} a description of the different configurations the
+experiments were run in, how parameters were controlled is given for and the
+analysis of the network topology, network performance and energy consumption is
+are presented.

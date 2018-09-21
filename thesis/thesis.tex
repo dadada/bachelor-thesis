@@ -1,0 +1,80 @@
+\documentclass[%
+  a4paper,              % DIN A4
+  style=print,          % enables twoside, print colors, and BCOR=15mm
+  bibliography=totoc,   % bibliography gets unnumbered entry
+  nexus,                % corporate design font
+  lnum,                 % use "Versalziffern" instead of "Mediaevalziffern"
+  extramargin,          % override corporate design margin to give more space for one-column text
+  %hyperrefdark,
+%  smallchapters         % can optionally be enabled for smaller font size in chapter headings
+]{tubsbook}
+
+\usepackage[hidelinks]{hyperref}
+
+\input{../lib/thesis_internal.tex}
+
+\usepackage{tabularx}
+\usepackage{pgfgantt} % Schedule
+\usepackage[printonlyused]{acronym}
+\usepackage{tikz}
+\usepackage{tikz-uml}
+\usepackage{booktabs}
+\usepackage{pdflscape}
+\usepackage{ifthen}
+\usepackage{subfig}
+\usepackage{enumitem}
+\usetikzlibrary{trees,positioning,fit,arrows,decorations.pathreplacing}
+
+\newcommand{\fitlab}{\emph{FIT IoT-LAB} }
+
+\begin{document}
+\frontmatter % roman page numbering
+
+\input{../lib/thesis_frontmatter.tex}
+
+\input{abstract.tex}
+
+% include Aufgabenstellung pdf
+% this is only needed if you did not write an expose/proposal
+%\usepackage{pdfpages}
+%\includepdf[pages=-]{aufgabenstellung/Aufgabenstellung}
+%\cleardoublepage
+
+\tableofcontents
+\cleardoublepage
+
+\listoffigures
+\cleardoublepage
+
+\listoftables
+\cleardoublepage
+
+\chapter*{Acronyms}
+
+\input{../lib/acronyms.tex}
+
+\cleardoublepage
+
+\mainmatter % arabic numbering
+
+\input{chapters/introduction.tex}
+\input{chapters/related_work.tex}
+\input{chapters/fitlab.tex}
+\input{chapters/setup.tex}
+\input{chapters/evaluation.tex}
+\input{chapters/conclusion.tex}
+
+\bibliographystyle{abbrv}
+\bibliography{../bibliography}
+
+\appendix
+
+\chapter{Contents of the CD}
+
+\begin{description}[style=nextline]
+    \item [data.tar.xz] xz compressed tar archive of the complete data for each experiment
+    \item [contiki-inga.bundle]  GIT bundle of the \emph{Contiki} source code used in the evaluation
+    \item [2017-schubert-fitiot.bundle]  GIT bundle of this thesis and all scripts for the evaluation
+\end{description}
+
+\end{document}

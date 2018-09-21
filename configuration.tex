@@ -1,0 +1,58 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% thesis configuration file %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% true: german
+% false: english
+% CAUTION: If you change the language, you have to delete the files expose.aux and thesis.aux. Otherwise you will get an error message during compilation!
+\setboolean{german}{false}
+
+% Choose one of theses thesis types or set it yourself:
+%\newcommand{\thesistype}{Bachelorarbeit}
+\newcommand{\thesistype}{Bachelor's Thesis}
+%\newcommand{\thesistype}{Masterarbeit}
+%\newcommand{\thesistype}{Master's Thesis}
+%\newcommand{\thesistype}{Projektarbeit}
+%\newcommand{\thesistype}{Project Thesis}
+
+% create supervisors command and set ibrsignature
+\input{../lib/shared_supervisors.tex}
+
+% your name goes here
+% add ", B. Sc." if you already have a title
+\newcommand{\name}{Tim Schubert}
+
+% your Matrikelnummer
+\newcommand{\matrikelnummer}{4373902}
+
+% your e-mail adress
+\newcommand{\mail}{tim.schubert@tu-bs.de}
+
+% your subject (german: "Studiengang")
+\newcommand{\studysubject}{Computer Science}
+
+% the duration of your thesis
+% for bachelor theses this is 3 or 4 month depending on your subject
+% for master theses this is 6 months
+\newcommand{\duration}{3}
+
+% you can have up to three supervisors
+% leave additional ones empty if not needed
+\supervisors{Dr. Ulf Kulau}{}{}
+
+% the professor
+\newcommand{\professor}{Prof.\,Dr.-Ing.\,Lars Wolf}
+
+% the german and english title of your thesis
+% If you write thesis in german an english title is mandatory!
+% If you write in english the english title is enough. Leave the german one empty.
+\newcommand{\titlegerman}{Evaluation von transienten Knotenausfällen mit FIT IoT-Lab}
+\newcommand{\titleenglish}{Evaluating transient node failures with FIT IoT-Lab}
+
+% the date you sign your proposal
+% your time to write your thesis starts at this date!
+\newcommand{\exposedate}{November 6, 2017}
+
+% the date you hand in your thesis
+% final date that will be printed on the thesis
+\newcommand{\thesisdate}{\today}

@@ -1,0 +1,30 @@
+.PHONY: all clean $(FILES) pdf ps
+OPTS="--shell-escap"
+
+clean:
+	rm -f *.aux *.blg *.out *.bbl *.log *.snm *.toc *.nav *.pdf *.ps *.dvi
+
+all: pdf # ps
+
+# all PDFs
+pdf: $(addsuffix .pdf, $(FILES))
+
+# all PostScripts
+ps: $(addsuffix .ps, $(FILES))
+
+# generic targets
+%.pdf: %.tex
+	pdflatex $(OPTS) $(basename $^)
+	bibtex $(basename $^)
+	pdflatex $(OPTS) $(basename $^)
+	pdflatex $(OPTS) $(basename $^)
+
+%.ps: %.dvi
+	dvips $^
+	dvips $^
+
+%.dvi: %.tex
+	latex $(basename $^)
+	bibtex $(basename $^)
+	latex $(basename $^)
+	latex $(basename $^)

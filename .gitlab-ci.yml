@@ -1,0 +1,27 @@
+image: yschroeder/docker-texlive-tubslatex
+
+expose:
+  only:
+    - branches
+  script:
+    - cd expose
+    - pdflatex expose.tex
+    - bibtex expose.aux
+    - pdflatex expose.tex
+    - pdflatex expose.tex
+  artifacts:
+    paths:
+      - expose/expose.pdf
+
+thesis:
+  only:
+    - branches
+  script:
+    - cd thesis
+    - pdflatex thesis.tex
+    - bibtex thesis.aux
+    - pdflatex thesis.tex
+    - pdflatex thesis.tex
+  artifacts:
+    paths:
+      - thesis/thesis.pdf

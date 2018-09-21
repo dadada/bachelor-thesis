@@ -1,0 +1,132 @@
+\documentclass[crop,tikz]{standalone}
+\usepackage{tikz}
+\begin{document}
+\usetikzlibrary{shapes.misc,positioning,circuits.ee.IEC,fit}
+\tikzstyle{system}=[shape=rounded rectangle,fill=green!20,text centered,draw]
+\tikzstyle{sensor}=[rectangle,fill=orange!20,text centered,draw]
+\tikzstyle{processor}=[rectangle,fill=blue!20,text centered,draw]
+\tikzstyle{connector}=[rectangle,fill=yellow!20,text centered,draw]
+\tikzstyle{memory}=[rectangle,fill=green!20,text centered,draw]
+\tikzstyle{radio}=[rectangle,fill=magenta!20,text centered,draw]
+\tikzstyle{bus}=[<->,color=black,draw]
+\tikzstyle{buslabel}=[near end,color=black,font=\tiny,auto]
+\tikzstyle{vcc}=[->,color=red,font=\tiny,draw,text=black]
+
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{foreground}
+\pgfsetlayers{background,main,foreground}
+
+\begin{tikzpicture}
+  % CN part
+
+  \node[processor] (cpu)[minimum width=50,minimum height=50] {M3};
+  \node[radio] (wireless) [right of=cpu,right=0.5] {Radio};
+  \node[radio] (bridge) [below of=cpu,below=0.5] {USB Bridge};
+
+  \path[bus] (bridge.120) -- node [buslabel,left] {JTAG} (cpu.260);
+  \path[bus] (bridge.60) -- node [buslabel,right] {SPI} (cpu.280);
+
+  \path[bus] (wireless.north west) -- node [buslabel,above] {SPI} (cpu.15);
+  \path[bus] (wireless.south west) -- node [buslabel,below] {GPIO} (cpu.-15);
+
+  \begin{pgfonlayer}{background}
+    \node [draw,fit=(cpu)(wireless)(bridge),label=above:\tiny{Control Node},fill=gray!20] (cn) {};
+  \end{pgfonlayer}
+
+  \node[processor] (a8) [minimum width=100,minimum height=100,left of=cn,left=4,above of=cpu] (a8) {A8};
+  \node[processor] (eth) [below of=a8,below=1] {ETH SW};
+  \node[connector] (eth0) [below of=eth,right of=eth,below=0.001] {ETH};
+  \node[connector] (eth1) [below of=eth,below=0.001] {ETH};
+  \node[connector] (eth2) [below of=eth,left of=eth,below=0.001] {ETH};
+  \path[bus] (eth) -- node[buslabel,above] {ETH} (a8);
+  \path[bus] (eth1) -- (eth);
+  \path[bus] (eth0) |- (eth);
+  \path[bus] (eth2) |- (eth);
+
+  \node[processor] (uhub) [above of=a8,above=2,left of=a8] {USB Hub};
+  \path[bus] (uhub) -- node[buslabel,below] {USB} (a8.120);
+
+  \node[connector] (usb0) [above of=uhub] {USB};
+  \node[connector] (usb1) [above of=uhub,left of=uhub] {USB};
+  \node[connector] (usb2) [above of=uhub,right of=uhub] {USB};
+  \path[bus] (usb2) |- (uhub);
+  \path[bus] (usb0) -- (uhub);
+  \path[bus] (usb1) |- (uhub);
+
+  \node[processor] (ubridge2) [right of=uhub,right=2,above of=a8,above=1] {USB Bridge};
+  \path[bus] (ubridge2) -- node[buslabel,below] {UART} (a8.60);
+
+  \node[connector] (onc) [minimum width=200,right of=usb2,right=0.5] {Open Node Connector};
+
+  \node[connector] (pwr) [right of=onc,right=3] {Power};
+
+  \node[processor] (pwrmgnt) [below of=pwr,below=1] {Power Mgnt};
+
+  \node[processor] (cmsr) [below of=pwrmgnt,left of=pwrmgnt,left=2] {Current Msr};
+
+  \path[bus] (ubridge2) |- node[buslabel] {USB} (onc.south west);
+  \path[bus] (eth.north east) -| node[buslabel] {ETH} (onc.187);
+  \path[bus] (bridge.north west) -| node[buslabel] {UART} (onc.190);
+  \path[bus] (cpu.160) -| node[buslabel,left] {GPIO} (onc.192);
+  \path[bus] (cpu.north west) -| node[buslabel,right] {I2C} (onc.194);
+
+  \path[vcc,<-] (usb2.south east) |- (3.55,4) -- (pwrmgnt.north west);
+  \node[label=above left:\tiny{5V}] at (3.55,4) {};
+  \path[vcc] (3.55,4) -| (cmsr.100);
+  \path[vcc] (pwrmgnt.north west) -- (onc.south east);
+  \path[vcc] (pwr) -- node[buslabel,right] {+3.3V to 5V} (pwrmgnt);
+  \path[vcc,<->] (cmsr.north east) |- (pwrmgnt);
+  \path[vcc] (pwrmgnt) |- node[buslabel] {+48V} (4.5,-2.4) -| (eth0.east);
+
+  \path[vcc,orange] (pwrmgnt.160) |- (onc.east);
+  \path[vcc,orange] (pwrmgnt.160) |- node[buslabel,below] {+3.3V} (1,3.5) -- (cmsr.28);
+
+  \node[draw,rounded rectangle] (gnd) at (2.8,2) {GND};
+  \path[vcc] (gnd) |- (pwrmgnt);
+\end{tikzpicture}
+
+\begin{tikzpicture}
+  \node[processor] (cpu)[minimum width=50,minimum height=50] {CPU}; %STM32F103RKEY
+
+  \node[memory] (flash) [below of=cpu,below=0.5] {Flash}; %N25Q128A
+  \draw[bus,transform canvas={xshift=-10}] (flash) edge node[buslabel] {GPIO} (cpu);
+  \draw[bus,transform canvas={xshift=10}] (flash) edge node[buslabel] {SPI} (cpu);
+
+  \node[radio] (wireless) [right of=cpu,above of=cpu,right=0.4] {Radio}; %AT86RF231
+  \path[bus] (wireless.240) |- node[buslabel,above] {GPIO} (cpu.10);
+  \path[bus] (wireless) |- node[buslabel] {SPI} (cpu);
+
+  \node[system] (usbb) [above of=cpu,above=1] {USB Bridge};
+  \path[bus] (usbb) edge node[buslabel] {JTAG} (cpu);
+  \path[bus,transform canvas={xshift= 20}] (usbb) edge node[buslabel] {UART} (cpu);
+
+  \node[connector] (oc) [above of=usbb,above=1,minimum width=100] {Open Node Connector};
+  \path[bus] (usbb) edge node[buslabel]{USB} (oc) ;
+  \path[bus] (oc.190) |- node[buslabel]{GPIO} (cpu.160) ;
+
+  \node[connector] (usb) [right of=oc,below of=oc,right=0.5] {USB};
+  \path[bus] (oc) |- (usb);
+
+  \node[system] (pm) [below of=usb] {Power};
+
+  \node[sensor] (light)   [minimum width=80,below left of=oc,left=1.5] {Light Sensor}; %ISL29020
+  \node[sensor] (pressure)[minimum width=80,below of=light] {Pressure Sensor}; %LPS331AP
+  \node[sensor] (gyro)    [minimum width=80,below of=pressure] {Gyroscope}; %L3G4200D
+  \node[sensor] (magneto) [minimum width=80,below of=gyro] {Magnetometer}; %LSM303DLHC
+
+  \path[bus] (oc.188) |- (light);
+  \path[bus] (oc.188) |- (gyro);
+  \path[bus] (oc.188) |- (magneto);
+  \path[bus] (oc.188) |- (pressure);
+  \path[bus] (oc.188) |- node[buslabel,below] {I2C} (cpu.190);
+  \path[bus] (gyro)   -| node[buslabel,below] {GPIO} (cpu.120);
+  \path[bus] (magneto.10)-| (cpu.120);
+
+  \path[vcc] (pm.210) |- node[auto] {+3.3 V} (usbb.10);
+  \path[vcc,yellow,text=black] (pm) -- node[auto] {+3.3 V mon.} (wireless);
+  \path[vcc] (usb) -- node[left] {+5} (pm);
+  \path[vcc] (oc.340) |- node[near start,auto] {+3.3} (pm.175);
+  \path[vcc,yellow,text=black] (oc.330) |- node[near start,left] {+5} (pm.185);
+
+\end{tikzpicture}
+\end{document}

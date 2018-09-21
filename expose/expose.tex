@@ -1,0 +1,503 @@
+\documentclass[
+  a4paper,
+  11pt,
+  style=screen,
+  extramargin,
+  bcor=10mm,
+  rgb,
+  hyperrefdark,
+  abstract=off,
+  lnum,
+]{tubsartcl}
+
+\input{../lib/expose_internal.tex}
+
+\usepackage{hyperref}
+\usepackage{tabularx}
+\usepackage{pgfgantt} % Schedule
+\usepackage[printonlyused]{acronym}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usetikzlibrary{trees,positioning,fit,arrows,decorations.pathreplacing}
+
+\newcommand{\fitlab}{\emph{FIT IoT-LAB} }
+
+\begin{document}
+
+\input{../lib/expose_title.tex}
+
+\setcounter{secnumdepth}{0}
+\section{Acronyms}
+
+\input{../lib/acronyms.tex}
+
+\newpage
+
+\setcounter{secnumdepth}{1}
+
+\section{Introduction and Motivation} % English: Introduction and Motivation
+
+Previous work has shown that transient node failures can have a large impact on the energy efficiency of \ac{WSN} \cite{kulau2017energy}, \cite{mueller2017}.
+Extensive evaluations have shown how this affects the \ac{RPL}. Subsequent work developed a hardened implementation of \ac{RPL} for the \emph{Contiki} operating system that managed to reduce the influence of node restarts.
+This hardened implementation has been evaluated both using simulations and within a limited test network.
+
+The goal of this work is to further verify the findings concerning the effect of node restarts on the \ac{RPL} protocol and to evaluate the effectiveness of the hardened implementation on a larger scale.
+The \fitlab features more than 2000 nodes and the ability to measure the energy consumption of each node. This makes this test environment ideal for the stated purpose.
+
+\section{Related Work} % English: Related Work
+
+Much work has been done evaluating \ac{RPL} and its repair process.
+In the following, a brief introduction to \ac{RPL} will be given, then previous research concerning the general performance of the protocol will be presented.
+After this, an overview of the sources of unreliability in \ac{WSN} follows and resetting nodes as a factor for network disruption are considered in more detail, before work is presented discussing the effects of the resulting transient node failures in more detail.
+From the literature, extension to \ac{RPL}, that may help to improve protocol reliability and network lifetime, will be presented, including optimizing the \ac{OF} for network lifetime, improving the formation of network paths, implementing fairer broadcast suppression, using intrusion detection systems, adding trust and authenticity and storing routing information persistently.
+
+\subsection{Introduction to RPL}
+
+\ac{RPL} as defined in \cite{rfc6550} is a routing protocol for \acp{LLN} that provides energy efficient networking for resource-constrained devices in networks where interconnects are expected to be bidirectional, but may have low data rates, high error rates and be unstable.
+In \ac{RPL}, nodes self-organize to form a \ac{DODAG}, where the node with the lowest rank is the destination of and the root of the \ac{DAG}.
+Such a \ac{DODAG} is displayed in \autoref{fig:dodag}.
+
+The bootstrapping process defines how nodes may join the network by selecting a parent and how to globally or locally repair the network when necessary.
+Each node emits \ac{DIO} messages targeted at all nodes in transmission range.
+These messages advertise the presence of a node, its affiliation with an existing \ac{DODAG}, the current routing costs and related metrics.
+
+A joining node may receive these messages and select a parent in the \ac{DODAG} based the received rank and routing costs, but must not select a node with a rank lesser than its current.
+The separation of the route metric from the forwarding process is an important characteristic of \ac{RPL} as the function that is used to calculate the route metric, the \ac{OF}, can be exchanged to form \acp{DODAG} based on different characteristics.
+
+\begin{figure}[h]
+  \centering
+  \begin{tikzpicture}[edge from parent/.style={draw,latex-},
+      every node/.style={circle,draw},level/.style={sibling distance=90mm/#1}]
+    \node (s) {$r_{0,0}$}
+    child { node {$r_{1,1}$}
+      child { node (d) {$r_{2,1}$}}
+      child { node (a) {$r_{2,2}$}
+        child { node (f) {$r_{3,1}$} }
+      }
+    }
+    child { node (c) {$r_{1,2}$}
+      child { node {$r_{2,3}$}
+        child { node (b) {$r_{3,2}$} }
+        child { node (e) {$r_{3,3}$} }
+      }
+    };
+    \path (s) edge[dashed] (a);
+    \path (s) edge[dashed] (b);
+    \path (c) edge[dashed] (b);
+    \path (a) edge[dashed] (d);
+    \path (c) edge[dashed] (e);
+    \path (d) edge[dashed] (f);
+    \path (f) edge[dashed] (b);
+  \end{tikzpicture}
+  \caption{\acf{DODAG}}
+  \label{fig:dodag}
+\end{figure}
+
+\subsection{Protocol Performance}
+
+One of the main goals of this work is to evaluate the performance of \ac{RPL} when dealing with transient node failures.
+Much research has already been done concerning the general performance of \ac{RPL}.
+
+An extensive survey of energy efficient routing protocols is presented in \ac{WSN} \cite{pantazis2013energy}.
+They classify protocols into four main categories, based on what their forwarding descisions are based on: network structure, communication mode, topology based and reliable routing.
+\ac{RPL} is listed as as a reliable routing protocol and further subcategorized as a multipath-based protocol.
+As an advantage they list low energy consumption, as a drawback that it only supports unicast traffic.
+The scalability is rated as good, as is mobility and robustness.
+
+The effectiveness and performance of \ac{RPL} has been evaluated in many publications \cite{rfc6687}, \cite{accettura2011performance}, \cite{korte2012study}, \cite{ali2012performance}, \cite{banh2015performance}.
+In \cite{rfc6687}, the authors studied \ac{RPL} both in test networks of varying sizes and in simulations.
+For the simulations, the link failure model and the network topology have been derived from measurements gathered from real-life deployments.
+Simulations were performed using the \emph{OMNet++} \cite{varga2008overview} network simulator.
+The authors measured path quality, routing table size, delay bounds, control overhead and connectivity loss.
+The study does not directly consider network lifetime and energy consumption as a metric, but results where obtained pertaining to the scalability and performance under realistic scenarios.
+It has been found, that \ac{RPL} scales well to very large topologies, provides near optimum path quality, neglible control overhead, and meets desired delay and convergency requirements for the given scenarios.
+They also find, that with \ac{RPL} it is possible to trade of routing stability for less control overhead and thereby increase network lifetime.
+
+A detailed study of \ac{RPL}, with a range of different parameter settings, as well as a comparison of the OF0 \cite{rfc6552}, which tries optimize for connectivity, and the \ac{ETX}-based \acp{OF} can be found in \cite{ali2012performance}.
+Observations where made using the \emph{Cooja} \cite{osterlind2006cross} network simulator for \emph{Contiki}, energy usage has been measured using \emph{Powertrace} \cite{dunkels2011powertrace}.
+Results hint to the importance of the settings for the Trickle timer for resource utilisation and the measured parameters.
+The \emph{ContikiMac} \cite{dunkels2011contikimac} duty cycling is also found to be beneficiary to energy efficiency.
+The findings also include results concerning network latency, delivery ratio, convergence time, control overhead and the energy consumption, using OF0 and \ac{ETX} respectively.
+The tendency of node failures to be frequent and often transient is remarked at one point, but the effects were studied explicitly.
+
+In \cite{korte2012study} the \ac{RPL} repair process is studied in more detail.
+They evalutate a limited test network using the \emph{Contiki} \ac{RPL} implementation and studied the effect of node failures on the formation of the \ac{DODAG} before it undergoes local or global repair.
+Here, the duration of the repair process and its individual steps are recorded and evaluated, as well as the results.
+They were also able to confirm that the repaired \ac{DODAG} still matches the optimal \ac{DODAG} created by the \ac{OF}.
+Although \cite{korte2012study} did not consider the additional energy usage from node failure, they find that most of the time it takes to recover from failure is spent on detecting a failed node, which may be useful when optimising the energy efficiency of the recovery process.
+They also hint at the ability of \ac{RPL} to make use of an \ac{OF} that uses the remaing energy of a node as a metric.
+This may help to balance energy consumption inside the network and thereby increase overall network lifetime.
+
+While multiple other studies find that simulations of \ac{RPL} and experimental results are largely consistent, \cite{korte2012study} measured a noticeable difference when comparing experimental results to simulations made in the network simulator \emph{NS2}\footnote{\url{https://www.isi.edu/nsnam/ns/}}.
+They also remark that, for some situations, the time at which certain protocol messages must be send is underspecified in \ac{RPL}.
+Depending on implementation details, these may lead to the creation of loops, which make it necessary to initiate a global repair of the \ac{DODAG}.
+Additionally, the \ac{NUD} employed in \ac{RPL} may not be indicative for a loss of connectivity if higher layer protocols that function across longer than one hop paths, like \ac{TCP}, are used as an indication of connectivity.
+
+When it comes to the effects of failing nodes, most research focuses on the performance of the local and global repair processes, but either it does not consider the possibility of transient node failure, or neglects the effects on the network lifetime from the resulting increased energy usage.
+
+\subsection{Sources of Unreliability in WSN}
+
+When evaluating networks with failing nodes, it is important to know the underlying cause for the failure, since failures from different causes may exhibit different behavior concerning frequency, duration, and intensity of the fault.
+As an example, while an error in programming for an edge-case may result in only a single node restart, failures from overheating may be result in many consecutive restarts \cite{boano2013hot}, \cite{boano2010impact}.
+
+The sources of unreliability in \ac{WSN} can be classified into those where an active attacker is involved and those where unreliable behavior is caused by passive environmental conditions.
+
+%In energy constrained devices such as wireless sensor nodes, duty cycling is an important mechanism for conserving energy.
+%One example of this is \emph{ContikiMAC} \cite{dunkels2011contikimac}, where the radio is only enabled for certain intervals of time.
+When undervolting a sensor node, components of the nodes are run outside of their specified voltage range.
+While this presents an interesting opportunity to increase the lifetime of \acp{WSN}, it may also increase the error rate of components and therefore may cause unpredictable behavior or even temporary node failure \cite{kulau2015undervolting}.
+An implementation of undervolting for \ac{WSN} has been done by \cite{kulau2016idealvolting}.
+They use supervised learning to adapt the voltage levels for individual nodes based on clock speed, temperature variations and differences in the manufacturing process.
+This made it possible to prolong the lifetime of the network by more than 40\%.
+
+Besides undervolting, there are many other factors in \ac{WSN} that may cause temporary node failure, such as temperature variations \cite{boano2010impact}, \cite{boano2013hot}, \cite{reynolds1974thermally}, programming errors and faulty components.
+
+An overview of common active attacks against \acp{WSN} is presented in \cite{karlof2003secure}.
+Surveyed modes of attack include: spoofed, altered, or replayed routing information, selective forwarding, sinkhole attacks, Sybil attacks, wormholes, HELLO flood attacks and acknowledgement spoofing.
+As an ad-hoc, hierarchical routing protocol, \ac{RPL} is generally vulnerable against all of the described attacks.
+
+\subsection{Effects of Transient Node Failures}
+
+One attack not explicitly mentioned in \cite{karlof2003secure} is based on repeatedly restarting nodes as a possible attack vector.
+
+Depending on the topology of the network, a single restarting node may cause transient node failures in other parts of the network and significantly increase the overall energy consumption of the network \cite{kulau2017energy}.
+This may also be exploited by an active attacker.
+Attacker controlled nodes integrate with the network, possibly using wormholing, in a way that as many paths as possible include the nodes as their parents.
+The nodes then fail for a short time and subsequently restart.
+By coordinating the timing and spacing of the restarts, an attacker repeatedly forces the network to repair itself.
+As this behavior may also be triggered by malfunctioning nodes, such an attack may 
+
+In \cite{kulau2017energy}, the energy impact of single node restarts when using \ac{RPL} is studied in detail.
+Experiments were done using the \emph{Cooja} network simulator and then compared to a reference simulation without resetting nodes.
+Both the effect of single node restarts and multiple node restarts were investigated on a binary tree topology and for a meshed network, where each node can have more than one parent.
+They discovered that a single node restart leads to an increased energy consumption of up to 20\% for the restarting node and its direct neighbors.
+To remedy the effect of passive node failure, they suggest optimising \ac{RPL} parameters and keeping persistent information across node restarts, while, in case of an active attacker an \ac{IDS} would be more applicable.
+
+\subsection{Extensions to RPL}
+
+While \ac{RPL} is comparatively easy to implement, it has some weaknesses when it comes to mobility, energy consumption and packet delivery rates.
+Some research that was done to extend and improve the protocol is presented here.
+
+\subsubsection{Objective Functions}
+
+The \ac{OF} is the function by which \ac{RPL} selects a parent in the \ac{DODAG} based on a metric like end-to-end delay, energy usage or delivery probability.
+Since, in \ac{RPL}, the choice of \ac{OF} is independent of the forwarding mechanism, it is possible to substitute an \ac{OF} that produces a \ac{DODAG} that will be less effected by certain types of failure conditions.
+A network can even have multiple \acp{DODAG}, that each can be optimized for different use cases.
+The \ac{OF} implemented in \cite{kamgueu2013energy} uses the remaining energy of a candidate parent as a metric.
+This way it is possible to create a \ac{DODAG} that distributes energy usage within the network more evenly and therefore increases network lifetime.
+As opposed to computing the total energy level of a path, the costs for a path is the minimum energy level of any node in the path.
+The \ac{OF} is evaluated using the \emph{Cooja} simulator for a network of 20 nodes.
+They where able to increase network lifetime by around 14\% compared to a network using the \ac{ETX}-based \ac{OF}.
+At the same time, the energy-based \ac{OF} achieved around 3\% worse delivery ratio compared to the \ac{ETX}-based \ac{OF}.
+They note that future work would be needed to combine \ac{ETX} and energy-based \ac{OF}, to obtain both long network lifetime and a stable network.
+
+\subsubsection{Coronal RPL}
+
+In \cite{gaddour2014co} \ac{Co-RPL} is proposed as an an extension to \ac{RPL} and evaluated.
+Co-\ac{RPL} makes use of the Corona mechanism \cite{olariu2006design} to help in the selection of a parent router and includes a procedure for reducing packet loss in case of a failing parent node.
+It has been found that, in specific scenarios, \ac{Co-RPL} reduces end-to-end delay by up to 2.5 seconds, packet loss by up to 45\% and energy consumption by up to 50\%.
+
+\subsubsection{Trickle Timer}
+
+The time and therefore energy needed for a failed node to re-join the network is also influenced by the behavior of its \emph{Trickle} timer \cite{levis2004trickle}.
+For \ac{RPL}, such a timer, based on the number of messages received during a sensing interval, regulates if the sender may send messages after the sensing interval.
+Since the behavior of the \emph{Trickle} timer for networks of more than one node is inherently non-deterministic, it is possible that the share of sending time each node gets may be unfair \cite{vallati2013trickle}.
+This in turn can result in less than optimal route selections when sensing for possible parents during the bootstrapping process.
+\emph{Trickle-F} \cite{vallati2013trickle} is an attempt at adding fair broadcast suppression to the \emph{Trickle} algorithm.
+Evaluations have shown its validity and that it was possible to obtain more efficient routes with same power consumption as the original algorithm.
+
+\subsubsection{Intrusion Detection Systems}
+
+As a method for recognizing and preventing large scale attacks on \ac{WSN}, different \acp{IDS} implementations have been discussed in the literature \cite{le2011specification}, \cite{raza2013svelte} and \cite{kasinathan2013denial}.
+These approaches have some considerable disadvantages for \ac{WSN}.
+First, \ac{IDS} are most efficient if all information is available at a central location.
+This requires a considerable traffic flow from each node to a central sink node, which consumes additional energy and therefore reduces network lifetime.
+Additionally, nodes closer to the sink node will see more traffic than nodes closer to a leaf of the \ac{DODAG}, which again reduces total network lifetime.
+For the node that processes the collected data, a connection to the power mains and additional storage and processing capabilities may be required.
+As a consequence of misbehavior, nodes may be prohibited from accessing the network in certain ways.
+This in turn requires that other nodes can be provisioned with rules that facilitate such penalties, which, depending on the network state, may not always be given and could be prevented by an active attacker using blackholing attacks.
+In this case a distributed algorithm would appear to be more promising.
+
+\subsubsection{Authenticity and Trust}
+
+In \cite{kantert2016combining} an approach for combining trust and \ac{ETX} is demonstrated, that improves the robustness of \ac{WSN} against unreliable or intentionally malicious nodes.
+This technique also has been shown to reduce the impact of nodes that repeatedly employ selective forwarding.
+Since a repeatedly failing node may also be interpreted as a node that selectively drops packets, it is possible that this will also be detected by this method.
+
+One problem of security in \ac{WSN} is that, because of the limited capabilities of the nodes, message authenticity is often not implemented, which makes the network susceptible to spoofed, altered or replayed routing information \cite{karlof2003secure}.
+If the network would be protected against spoofed messages, it would be considerably more difficult for an active attacker to impersonate nodes or create virtual nodes, that take part in attacks on the network.
+An implementation of message authenticity and protection against replay attacks can be found in \cite{perazzo2017implementation}.
+The authors show that their protection against replay attacks has a considerable negative impact on network formation time, while the message authenticity and encryption only had a modest impact on performance.
+
+\subsubsection{Persistent Routing Information}
+
+Another promising approach for hardening \ac{RPL} against transient node failures is to reduce the time the bootstrapping process takes by saving some of the state of the \ac{RPL} implementation between node restarts and restoring it after the node has failed.
+An implementation of this approach has been created for \emph{Contiki\ac{RPL}} \cite{mueller2017}.
+Multiple new problems arise from this approach: The implementation has to guarantee that the saved state remains consistent, even if the node fails while still editing the saved state, and the node needs to be able to decide if a restored state still remains valid.
+
+To solve the problem of data integrity, the implementation constructs a checksum for the stored data and stores it along with the \ac{RPL} state.
+On each node, the implementation keeps a clock that describes the recentness of the saved information.
+From the clock, the \ac{DODAG} ID, instance ID and the version number of the \ac{DODAG} a \ac{UID} is computed and send alongside other information as part of the \ac{DIO} messages.
+Joining nodes receive these \acp{UID}, and can use them to decide if the state of the surrounding network has diverged from the state they have stored before.
+Another issue is that the write operations cause additional energy usage.
+This issue has been addressed by reducing the number and frequency of writes by directly accessing the device driver instead of relying on the file system.
+
+The evaluation is done using simulations in the \emph{Cooja} network simulator.
+Only two topologies were evaluated, a binary tree topology and a meshed star topology, similar to \cite{kulau2017energy}.
+The energy overhead of the hardened implementation was measured and compared against the same network using default \emph{Contiki\ac{RPL}} and without using the UID.
+Networks without failing nodes and with a repeatedly failing node have been simulated, as well as multiple clock intervals.
+The simulation has been validated within a very limited test network of seven nodes at \ac{IBR}.
+The test nodes were \emph{Zolertia Z1} sensor nodes that were programable using \emph{Raspberry Pi} \ac{SoC} computers.
+
+Except for the size, this setup is in many ways similar to the setup used by \fitlab sensor nodes.
+In contrast to the simulations, link-quality was below 100\% because of interference.
+Similar to \cite{ali2012performance}, energy measurements where done using \emph{Powertrace}.
+The evaluation has shown a maximum of 0.5\% energy overhead compared to the default implementation, and during individual or multiple node restarts the additional energy usage was reduced by 55\% to 70\%.
+
+\subsection{FIT IoT-LAB}
+
+While \cite{mueller2017} validated the implementation of the hardened version of the implementation of \ac{RPL} in \emph{Cooja}, the effect of transient node failures has only been evaluated in a very limited test network.
+\fitlab presents an opportunity to evaluate this implementation on a much larger scale.
+
+\fitlab \cite{adjih2015fit} is part of a an open testbed for \ac{WSN} and is composed of more than 2728 nodes.
+It is part of a larger federation of \ac{WSN} testbeds called \emph{OneLab} \cite{baron2015onelab}, which also includes \emph{CorteXlab}\footnote{\url{http://www.cortexlab.fr/}}, \emph{NITLab6}\footnote{\url{ http://nitlab.inf.uth.gr/}} and \emph{FIT NITOS-Lab}\footnote{\url{http://fit-nitos.fr/}}, \emph{PlanetLab Europe}\footnote{\url{http://planet-lab.eu/}}, \emph{FUSECO Playground}\footnote{\url{http://fuseco-playground.org/}} and \emph{w-iLab.t}\footnote{\url{http://ilabt.iminds.be/wilabt}}.
+\fitlab provides a large scale test network for educational, scientific and industrial purposes to end users, that can be used to obtain reproducible results as experiments can run fully automated and all hardware and software is freely available under open source licenses.
+
+\begin{figure}[h]
+  \centering
+  \begin{tikzpicture}[node/.style={circle,draw}]
+      \begin{scope}[node distance=2cm]
+        \node (a) {ON};
+        \node (b) [right=of a] {GW};
+        \node (c) [right=of b] {CN};
+      \end{scope}
+
+      \begin{scope}[<->,>=stealth',auto]
+        \path (a) edge[bend left] (b)
+        (b) edge (c);
+      \end{scope}
+
+      \node[draw,dotted,fit=(b)(c)](group){};
+      \draw[line width=1pt,black,decorate,decoration={amplitude=7pt,brace,mirror}]
+      (group.south west) -- (group.south east);
+      \node[below=of group,anchor=center]{Host node};
+
+  \end{tikzpicture}
+  \caption{Architecture of a \fitlab node in the testbed}
+  \label{fig:fitnode}
+\end{figure}
+
+The platform offers tools for reserving nodes for test runs, deploying software to the nodes, controlling and resetting the nodes, and obtaining test results from the nodes including energy usage, serial output, packet captures and radio activity.
+Nodes can also be debugged using a remote debugger.
+There are three kinds of nodes, from which each node in the testbed is assembled: The \ac{ON}, the \ac{GW}, and the \ac{CN} (see also \autoref{fig:fitnode}).
+The \ac{ON} allows for bare-metal access and can be monitored and reprogrammed using the \ac{GW}.
+The \ac{CN} coordinates the experiment, reprograms the firmware, powers the \ac{ON} from battery or the mains, monitors power consumption and sensor input and can serve both as a packet sniffer and inject packets into the network.
+The \ac{ON} is either based on the \emph{WSN430}\footnote{\url{https://www.iot-lab.info/hardware/wsn430/}}, an \emph{M3}\footnote{\url{https://www.iot-lab.info/hardware/m3/}} or an \emph{A8}\footnote{\url{https://www.iot-lab.info/hardware/a8/}} microprocessor, and a different number of nodes is available depending on the test site.
+All nodes except the \emph{A8} node can run \emph{RIOT} \cite{baccelli2013riot}, \emph{OpenWSN} \cite{watteyne2012openwsn}, \emph{FreeRTOS}\footnote{\url{http://www.freertos.org/}} and \emph{Contiki}, except the \emph{A8} which exclusively runs Linux\footnote{\url{https://www.kernel.org/}}.
+In addition, the \emph{WSN430} also has support for \emph{TinyOS} \cite{levis2005tinyos}.
+
+Some of the nodes are mobile and can be configured to drive on specified paths through the network.
+Their movements can be recorded and are available to the user.
+Experiments can be controlled using a \ac{REST} \ac{API} and an \ac{SSH} front-end.
+These front-ends can either be accesses using the \ac{CLI}\footnote{\url{https://github.com/iot-lab/cli-tools}} tools or a Web-Portal.
+Some example use-cases are shown in \fitlab and more can be found on the website of the project\footnote{\url{https://www.iot-lab.info}}.
+
+\section{Task} % English: Task
+
+The initial task is to get acquainted with the usage of \fitlab infrastructure.
+Subsequently, the effect of node restarts on the \ac{RPL} protocol will be evaluated extensively, as well as the improvements made by the hardened implementation.
+The main challenge at hand is to use the \fitlab to compare the default \ac{RPL} variant as implemented in \emph{Contiki} to the hardened version of the implementation.
+This includes the design of a number of experiments that model real world scenarios for the deployment of sensor networks.
+One important goal is to be able to easily reproduce and extend the experiments.
+Software should be created that simplifies the creation of test networks, the collection of measurement data and the analysis of the collected data.
+
+\section{Evaluation} % English: Evaluation
+
+For all experiments in the \fitlab, the \emph{WSN430} node will be used running a version of \emph{Contiki}.
+This is to ensure compatibility with a fork\footnote{\url{https://github.com/ejoerns/contiki-inga}} of the \emph{Contiki} software used in previous evaluations, and has the added benefit of supporting the largest number of nodes of any type in \fitlab.
+This way, larger test networks may be created, since more nodes of the same type will be available at the same time.
+The evaluation will be done in two parts, where the first part evaluates the effects of transient node failures when using the default version of \emph{Contiki} and the second part repeats the experiments using the hardened version of \emph{Contiki} created in \cite{mueller2017}.
+
+\subsection{Evaluation of Transient Node Failures}
+
+The first thing to evaluate will be the effect of node restarts on the default \ac{RPL} implementation without the hardening modifications by \cite{mueller2017}. 
+
+\subsubsection{Topology}
+
+For this, different topologies that each provide different levels of connectivity, similar to the star topology (see \autoref{fig:meshstar}) and the tree topology (see \autoref{fig:treetop}), should be attempted, as they where previously used in \cite{mueller2017}.
+
+\begin{figure}[h]
+  \centering
+  \begin{tikzpicture}[edge from parent/.style={draw},
+      every node/.style={circle,draw},level/.style={sibling distance=40mm/#1}]
+    \node {}
+    child { node {}
+      child { node {}
+        child { node {} }
+        child { node {} }
+      }
+      child { node {}
+        child { node {} }
+        child { node {} }
+      }
+    }
+    child { node {}
+      child { node {}
+      }
+      child { node {}
+        child { node {} }
+        child { node {} }
+      }
+      child { node {}
+      }
+    }
+    child { node {}
+      child { node {}
+        child { node {} }
+        child { node {} }
+        child { node {} }
+      }
+      child { node {}
+        child { node {} }
+      }
+    };
+  \end{tikzpicture}
+  \caption{Tree topology}
+  \label{fig:treetop}
+\end{figure}
+
+% TODO build in \latex \tikz
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=.5\textwidth]{../images/starmesh.png}
+  \caption{Star mesh topology (see \cite{mueller2017})}
+  \label{fig:meshstar}
+\end{figure}
+
+In the case of \fitlab, such ideal topologies may not always be possible, depending on the availability of nodes and the physical topology of the network, as well as environmental conditions (e.g. interference, presence of humans, etc.).
+Alternatively, resetting nodes can be selected from a random topology, based on their location inside the network.
+
+For the evaluation, a stable network is required.
+Since \fitlab is a multi-user system, it is to be expected that the stability of the network will be influenced by co-channel interference and \ac{MAC} protocol behavior.
+This is why it is important to assess the impact of such environmental conditions on the experiments.
+
+\subsubsection{Parameters and Tools}
+
+In order to build upon findings by \cite{kulau2017energy}, \cite{gaddour2014co}, \cite{accettura2011performance} and \cite{ali2012performance} concerning the effect of transient node failures and the \ac{RPL} repair process, multiple parameters should be collected from the test network, including those listed in \autoref{tab:params}.
+
+\begin{table}[h]
+  \centering
+  \caption{Measured Parameters}
+  \label{tab:params}
+  \begin{tabular}{ll}
+    \toprule
+    Parameter & Tool \\
+    \midrule
+    Network latency & Package captures \\
+    Delivery ratio & Package captures \\
+    Control overhead & Package captures \\
+    Convergence time & Serial output \\
+    Routing table size & Serial output \\
+    DODAG state & Serial output \\
+    Node restarts & Control Node \\
+    RSSI & Control Node \\
+    Energy usage & Control Node, \emph{Powertrace} \\
+  \end{tabular}
+\end{table}
+
+For obtaining the data and setting up experiments, the \fitlab provides many tools\footnote{\url{https://github.com/iot-lab}} that build upon well documented programming interfaces\footnote{\url{https://www.iot-lab.info/tools/rest-api-docs/}}.
+This should make it possible to create experiments that can be reproduced by software and later can be easily extended when necessary.
+
+Parameters like the network latency, packet delivery ratio and the control overhead can be measured using \ac{PCAP} files at the \ac{CN}, downloaded from the \ac{GW}, and can be analyzed using network protocol analyzers (such as \emph{Wireshark}\footnote{\url{https://www.wireshark.org/}}).
+Other parameters, such as the network convergence time, routing table size and the state of the \ac{DODAG} can be obtained using the serial output of the \ac{ON}, which can be forwarded using the \ac{API}.
+
+Each node has the ability to obtain the state of its battery in real-time.
+This makes it possible to precisely evaluate the energy usage, instead of having to rely on software solutions like \emph{Powertrace}.
+Additionally, \emph{Powertrace} may be used to obtain measurements, as the complete data-sheets and schematics are available through open source licenses.
+The results can then be compared to the results from the real-time measurements to verify the accuracy of measuring with \emph{Powertrace}.
+
+\subsubsection{Environmental Conditions}
+
+To adequately simulate transient node failures inside the network, it is necessary to be able to control the location, time and frequency of node restarts.
+In \fitlab, node restarts can be triggered using the \ac{API} by advising the \ac{CN} to restart the node.
+One problem with the multi-user nature of \fitlab is, that the environmental conditions and the topology can not be controlled with the same precision as would be possible in an enclosed test environment.
+One possibility for mitigating this effect may be to change the test variants between experiments (see \autoref{tab:variants}), use the same network topology and schedule directly consecutive execution times for each test run.
+Another approach would be to alternate the test variants within the same experiment and control which variant is executed by configuring the node using the serial link.
+Furthermore, it is important to record and analyze as many environment conditions as possible, including \ac{RSSI} and \ac{MAC} protocol behavior.
+
+\begin{table}[h]
+  \centering
+  \caption{Experiment variants}
+  \begin{tabular}{r c c}
+    \toprule
+    Test run & Hardening & Resets \\
+    \midrule
+    1 & & \\
+    2 & & X \\
+    3 & X & \\
+    4 & X & X \\
+    \end{tabular}
+  \label{tab:variants}
+\end{table}
+
+\subsection{Evaluation of the Hardened Implementation}
+
+The second part is to evaluate the effect of the hardened implementation on the researched parameters from the first part.
+For this, the same experiments that were done in the first part need to be replicated in the second part and the results need to be compared.
+Therefore, the experiments have to be reproducible to ensure that the results from the first and second part remain comparable.
+As previously noted, this is possible since the complete experiment can be controlled and monitored through the \fitlab \acp{API}.
+One central point will be to verify the findings by \cite{mueller2017} in a larger test network, that more closely resembles a real-world network, and compare the findings from \fitlab to findings from the simulations.
+The behavior of the modified repair process can be studied in detail, because both packet captures, exact restart times of the nodes and the state of the \ac{DODAG} can be obtained using the \ac{CN}.
+
+\section{Schedule} % English: Schedule
+
+% für Bachelorarbeiten / for Bachelor's Theses
+\begin{ganttchart}[hgrid, vgrid,]{1}{12}
+\gantttitle{Week}{12} \\
+\gantttitlelist{1,...,12}{1} \\
+\ganttbar{WP1: Preparations}{1}{1} \\
+\ganttbar{WP2: Create Toolchain}{1}{5} \\
+\ganttbar{WP3: Design Experiments}{2}{6} \\
+\ganttbar{WP4: Analyze Results}{7}{10} \\
+\ganttbar{Writing}{1}{11} \\
+\ganttbar{Printing and Filing}{12}{12} \\
+\ganttmilestone{Final Presentation}{12}
+\end{ganttchart}
+
+\subsection{Work Packages} % English: Work Packages
+
+\subsubsection{WP1: Preparations}
+
+During this work package, the capabilities of \fitlab should be assessed and it should be verified that all required data is available to later perform the evaluation of \ac{RPL}.
+For this, some small scale experiments should be created that measure some of the parameters relevant for the evaluation.
+These experiments can also be used to verify the toolchain.
+
+\subsubsection{WP2: Create a Toolchain} % English: WP1: ...
+
+In the second work package, a toolchain for defining experiments, running experiments, obtaining results and analyzing the results should be created.
+The toolchain should use the \ac{API}\footnote{\url{https://www.iot-lab.info/tools/rest-api-docs/}} either directly or using a wrapper such as the \emph{iotlabcli}\footnote{\url{https://github.com/iot-lab/iot-lab/wiki/CLI-Tools}} \emph{Python}\footnote{\url{https://www.python.org/}} module.
+Ideally, the toolchain should make it possible to issue a command to start the experiment and then, after the experiment finishes, obtain the data from \fitlab and automatically generate plots (see \emph{gnuplot}\footnote{\url{http://gnuplot.info/}}) that visualize the results.
+
+\subsubsection{WP3: Design Experiments}
+
+Based the goals of the evaluation, experiments should be designed.
+The experiments should be designed in a way, that they can be run both for the default version of the \emph{Contiki} software and the hardened version.
+For this, it is important to be able to reproduce the experiments through a software-defined toolchain, so that results remain reproducible and comparable.
+
+\subsubsection{WP4: Analyze Results}
+
+The results should be analyzed and interpreted.
+If possible, suggestions should be made on how to tweak the parameter settings of \ac{RPL} and the hardened implementation to achieve better results for networks in which transitive node failures occur frequently.
+
+\newpage
+
+\section{Execution and Editing} % English: Execution and Editing
+
+\input{../lib/expose_sign.tex}
+
+\newpage
+
+\bibliographystyle{abbrv}
+\bibliography{../bibliography}
+
+\end{document}

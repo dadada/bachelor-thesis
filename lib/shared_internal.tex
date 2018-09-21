@@ -1,0 +1,22 @@
+\usepackage[utf8]{inputenc}
+\usepackage{lipsum}
+\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+
+\newboolean{german}
+\newboolean{master}
+
+% the institute's name in german and english
+\newcommand{\institutegerman}{Institut für Betriebssysteme und Rechnerverbund}
+\newcommand{\instituteenglish}{Institute of Operating Systems and Computer Networks}
+
+\input{../configuration.tex}
+
+\author{\name}
+
+\ifgerman
+	\usepackage[ngerman]{babel}
+	\title{\titlegerman}
+\else
+	\usepackage[english]{babel}
+	\title{\titleenglish}
+\fi
